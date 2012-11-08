@@ -1,4 +1,3 @@
-
 This has only been tested on mythbuntu 12.04. There is no security use at youown risk.
 
 This program expects to be in the /opt/mmpc
@@ -14,7 +13,7 @@ needed
   blip.tv     2012-10-17
   Regular rss 2012-10-19
   justin.tv   2012-10-26	This api works http://api.justin.tv/api/channel/archives/<userid>.xml?limit=10
-		Due to the way justin.tv does it's load balancing this needs work.
+		
 
   
 For the web interface copy the mmpc.php file to /var/www/
