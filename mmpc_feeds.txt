@@ -1,2 +1,0 @@
-The Ben heck show	http://revision3.com/tbhs/feed/MP4-hd30
-Hyrel3d	http://api.justin.tv/api/channel/archives/hyrel3d.xml?limit=10
