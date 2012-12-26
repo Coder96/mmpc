@@ -17,6 +17,10 @@ my $curlPath = 'curl';
 my $workdir = '/opt/mmpc';
 my $cOldFilestoAdd = 'mmpc_oldfilestoadd.log';
 
+unless(-e "$workdir/$cOldFilestoAdd"){
+	system("touch $workdir/$cOldFilestoAdd");
+	system("chmod a+w $workdir/$cOldFilestoAdd");
+}
 open OLDFILES, ">>$workdir/$cOldFilestoAdd" or die $!;
 
 if($urlToSearch =~ m/youtube.com/i) { $DownloadType = 1; }

@@ -48,7 +48,10 @@ my $Myth = new MythTV({'connect' => 0});
 # Connect to the database
 my $dbh = $Myth->{'dbh'};
 
-
+unless(-e "$workdir/$cFeedsFile"){
+	system("touch $workdir/$cFeedsFile");
+	system("chmod a+w $workdir/$cFeedsFile");
+}
 open FEEDS, "$workdir/$cFeedsFile" or die $!;
 while (<FEEDS>)	{
 	 s/#.*//;            # ignore comments by erasing them
@@ -58,6 +61,10 @@ while (<FEEDS>)	{
 }
 close(FEEDS);
 
+unless(-e "$workdir/$cOldFiles"){
+	system("touch $workdir/$cOldFiles");
+	system("chmod a+w $workdir/$cOldFiles");
+}
 open OLDFILES, "$workdir/$cOldFiles" or die $!;
 while (<OLDFILES>){
 	 s/#.*//;            # ignore comments by erasing them
@@ -66,17 +73,28 @@ while (<OLDFILES>){
 	push @previouslyDownloaded, $_;
 }
 close(OLDFILES);
-
+unless(-e "$workdir/$cOldFilestoAdd"){
+	system("touch $workdir/$cOldFilestoAdd");
+	system("chmod a+w $workdir/$cOldFilestoAdd");
+}
 open OLDFILESADDTO, "$workdir/$cOldFilestoAdd" or die $!;
 my @addtooldfile = <OLDFILESADDTO>;
 close(OLDFILESADDTO);
 open OLDFILESADDTO, ">$workdir/$cOldFilestoAdd" or die $!;
 close(OLDFILESADDTO);
 
+unless(-e "$workdir/$cOldFiles"){
+	system("touch $workdir/$cOldFiles");
+	system("chmod a+w $workdir/$cOldFiles");
+}
 open OLDFILES, ">>$workdir/$cOldFiles" or die $!;
 foreach $filetoadd (@addtooldfile){
 	chomp($filetoadd);
 	writeOldFilesLog($filetoadd);
+}
+unless(-e "$workdir/$cLastRun"){
+	system("touch $workdir/$cLastRun");
+	system("chmod a+w $workdir/$cLastRun");
 }
 open LOG, ">$workdir/$cLastRun" or die $!;
 
