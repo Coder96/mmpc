@@ -230,6 +230,12 @@ FEED: foreach $feed (@feeds){
 			}
 			my ($suffix) = $fLink =~ /(\.[^.]+)$/;
 			my($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, $suffix);
+			
+			$fpos1 = index($fLocalFileName, '?');
+			if($fpos1 > -1){
+				$fLocalFileName = substr($fLocalFileName, 0, $fpos1);
+			}
+			
 			my $command = ("$wgetPath -v --output-document='$RecordingsDir/$fLocalFileName' --output-file=$workdir/$cDownloadFile '$fLink'");
 			writeDebugLog("$command");
 			my $cLog = qx($command);
