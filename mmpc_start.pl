@@ -13,6 +13,9 @@ flock SELF, LOCK_EX | LOCK_NB or exit;
 #
 # Global vars
 #
+
+my $configFile = 'mmpc_config.txt';
+
 my $youtubedlPath = '/opt/mmpc/youtube-dl';
 my $wgetPath = 'wget';
 
@@ -32,6 +35,34 @@ my $cDownloadFile  = 'mmpc_download.log';
 
 my $MaxNumberofFeedItemsToDownload = 10;
 my $MaxNumberofCharsToUseofDescption = 80;
+
+unless(-e "$workdir/$configFile"){
+	system("touch $workdir/$configFile");
+	system("chmod a+w $workdir/$configFile");
+	
+	open(CONFIG, ">>$workdir/$configFile")or die $!;
+	print CONFIG <<DONE ;
+	\$youtubedlPath = '/opt/mmpc/youtube-dl';
+	\$wgetPath = 'wget';
+	\$rsstailPath = 'rsstail';
+	\$xmlstarletPath = 'xmlstarlet';
+	\$curlPath = 'curl';
+	\$ChannelId = '9999';
+	\$RecordingsDir = '/var/lib/mythtv/recordings';
+	\$MaxNumberofFeedItemsToDownload = 10;
+	\$MaxNumberofCharsToUseofDescption = 80;
+DONE
+	
+	close(CONFIG);
+}
+
+open(CONFIG, "$workdir/$configFile");
+@lines = <CONFIG>;
+foreach $line (@lines){
+	eval($line);
+}
+close(CONFIG);
+
 
 my $justintvurl = '';  # yes this is bad.
 

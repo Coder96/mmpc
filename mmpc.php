@@ -7,8 +7,9 @@ $cDownloadlog = '/opt/mmpc/mmpc_download.log';
 $cOldFileslog = '/opt/mmpc/mmpc_oldfiles.log';
 $cOldFileslogtoadd = '/opt/mmpc/mmpc_oldfilestoadd.log';
 $cFeedsFile   = '/opt/mmpc/mmpc_feeds.txt';
+$cConfigFile = '/opt/mmpc/mmpc_config.txt';
 
-#echo $_POST["toolbar"];
+#echo $_POST["editconfig"];
 #echo '<hr>';
 
 ToolBar();
@@ -48,6 +49,8 @@ if($_POST["edit"] == 'Save'){
 			echo exec("/opt/mmpc/mmpc_oldfilestoadd.pl $feed[1]");
 		}
 	}
+} elseif($_POST["editconfig"] == 'Save'){
+	SaveConfig();
 }
 
 
@@ -62,12 +65,17 @@ if($_POST["toolbar"] == 'Last Run Log'){
 } elseif($_POST["toolbar"] == 'Add Feed'){
 	EditFeed();
 	ListFeeds();
+} elseif($_POST["toolbar"] == 'Config'){
+	ListConfig();
 } else {
 	ListFeeds();
 }
 
 
 function ToolBar(){
+
+	global $cConfigFile;
+
 	echo '<table><tbody>';
 	echo '<tr>';
 	echo '<form method=post >';
@@ -77,10 +85,32 @@ function ToolBar(){
 	echo "<td><input type=submit name=toolbar value='Downloaded Log' /></td>";
 	echo "<td><input type=submit name=toolbar value='Old Files'    /></td>";
 	echo "<td><input type=submit name=toolbar value='Old Files to add' /></td>";
+	if(file_exists($cConfigFile)){
+		echo "<td><input type=submit name=toolbar value='Config' /></td>";
+	}
 	echo '</form>';
 	echo '</tr>';
 	echo '</tbody></table>';
 	echo '<hr>';
+}
+
+function ListConfig(){
+	
+	global $cConfigFile;
+	
+	$cLine = file($cConfigFile);
+	
+	echo '<table><thead>';
+	echo '<tr><th>Description</th><th>Value</th></tr>';
+	echo '</thead><tbody><form method=post>';
+	foreach ($cLine as $lineNum => $line){
+		$line = rtrim($line);
+		$line = explode("=", $line);
+		$line[1] = str_replace(";","", $line[1]);
+		echo "<tr><td>$line[0]</td><td><input type=hidden name=configname[] value='$line[0]' /><input size='50%' type=text name=configval[] value=$line[1] /></td></tr>\n";
+	}
+	echo "<tr><td></td><td><input type=submit name=editconfig value='Save' /></td></tr>";
+	echo '</form></tbody></table>';
 }
 
 function ListFeeds(){
@@ -169,5 +199,21 @@ function FeedOnOff($iFlip='E'){
 	fclose($FH);
 }
 
+function SaveConfig(){
+	global $cConfigFile;
+	$i = 0;
+	$config='';
+	foreach ($_POST['configname'] as $name){
+#		echo "<br>$name <br>";
+#		echo $_POST['configval'][$i++];
+		$config = $config . $name . "='". $_POST['configval'][$i++]."';\n";
+	}
+#	echo '<code><pre>';
+#	echo $config;
+	
+	$FH = fopen($cConfigFile,'w');
+	fwrite($FH, $config);
+	fclose($FH);
+}
 
 ?>
