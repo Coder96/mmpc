@@ -162,15 +162,41 @@ function EditFeed($iEdit='New'){
 		list($wName, $wUrl, $wUser, $wPass, $junk) = explode("\t",$_POST["line"]);
 		$Type = 'Update';
 	}
-	echo $_POST["line"];
+	
+	
+	echo "
+<script>
+function FillUrl(){
+	//document.getElementById('editfeedurl').value='aaa';
+	var sel=document.getElementById('urltype');
+	if(sel.options[sel.selectedIndex].value =='Youtube User Uploads'){
+		document.getElementById('editfeedurl').value='http://gdata.youtube.com/feeds/api/users/'+ document.getElementById('editfeedtext').value +'/uploads';
+	} else if(sel.options[sel.selectedIndex].value =='Justin.tv user archive'){
+		document.getElementById('editfeedurl').value='http://api.justin.tv/api/channel/archives/'+ document.getElementById('editfeedtext').value +'.xml?limit=10';
+	}
+}
+</script>
+";
+	
+	
+#	echo $_POST["line"];
 	echo "<table>";
 	echo "<tbody><form method=post>";
-	echo '<input type=hidden name=line value="'. $_POST["line"].'" />';
+	echo '<input type=hidden name="line" value="'. $_POST["line"].'" />';
 	echo "<tr><th>Feed Name </th><td><input size='100%' type=text name=editfeedname value='$wName' /></td></tr>";
-	echo "<tr><th>Feed URL  </th><td><input size='100%' type=text name=editfeedurl  value='$wUrl'  /></td></tr>";
+	echo "<tr><th>Feed URL  </th><td><input size='100%' type=text id=editfeedurl name=editfeedurl  value='$wUrl'  /></td></tr>";
+	echo "<tr><th>or        </th><td> </td></tr>";
+	echo "<tr><th>Feed Type </th><td>
+					<SELECT id=urltype name=urltype>
+						<OPTION>Youtube User Uploads</OPTION>
+						<OPTION>Justin.tv user archive</OPTION>
+					</SELECT>
+					<input size='70%' type=text id='editfeedtext' name='editfeedtext' />
+					<BUTTON type=button ONCLICK=\"FillUrl()\">^</button>
+				</td></tr>";
 	echo "<tr><th>User Name </th><td><input size='100%' type=text name=editfeeduser value='$wUser' /></td></tr>";
 	echo "<tr><th>Password  </th><td><input size='100%' type=text name=editfeedpass value='$wPass' /></td></tr>";
-	echo "<tr><td></td><td><input type=submit name=edit value='$Type' /></td></tr>";
+	echo "<tr><td></td><td><input type=submit name=edit value='$Type'/></td></tr>";
 	echo '</form></tbody></table>';
 	echo '<hr>';
 }
