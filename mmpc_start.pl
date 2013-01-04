@@ -36,6 +36,9 @@ my $cDownloadFile  = 'mmpc_download.log';
 my $MaxNumberofFeedItemsToDownload = 10;
 my $MaxNumberofCharsToUseofDescption = 80;
 
+#
+# Create Config file if it does not exesists.
+#
 unless(-e "$workdir/$configFile"){
 	system("touch $workdir/$configFile");
 	system("chmod a+w $workdir/$configFile");
@@ -56,6 +59,9 @@ DONE
 	close(CONFIG);
 }
 
+#
+# Load config file options
+#
 open(CONFIG, "$workdir/$configFile");
 @lines = <CONFIG>;
 foreach $line (@lines){
@@ -75,10 +81,12 @@ $debug = 0; #False
 
 # Connect to mythbackend
 my $Myth = new MythTV({'connect' => 0});
-
 # Connect to the database
 my $dbh = $Myth->{'dbh'};
 
+#
+# Create needed files
+#
 unless(-e "$workdir/$cFeedsFile"){
 	system("touch $workdir/$cFeedsFile");
 	system("chmod a+w $workdir/$cFeedsFile");
@@ -128,6 +136,43 @@ unless(-e "$workdir/$cLastRun"){
 	system("chmod a+w $workdir/$cLastRun");
 }
 open LOG, ">$workdir/$cLastRun" or die $!;
+
+#
+# Check if needed programs are installed.
+#
+@list = `$youtubedlPath --help`;
+if ($? == -1) {
+	writeLog("Missing program $youtubedlPath");
+	writeLog("Download from http://rg3.github.com/youtube-dl/");
+	$fail = 'y';
+}
+@list = `$wgetPath --help`;
+if ($? == -1) {
+	writeLog("Missing program $wgetPath");
+	writeLog("install from apt-get install wget");
+	$fail = 'y';
+}
+@list = `$rsstailPath -help`;
+if ($? == -1) {
+	writeLog("Missing program $rsstailPath");
+	writeLog("install from apt-get install rsstail");
+	$fail = 'y';
+}
+@list = `$xmlstarletPath --help`;
+if ($? == -1) {
+	writeLog("Missing program $xmlstarletPath");
+	writeLog("install from apt-get install xmlstarlet");
+	$fail = 'y';
+}
+@list = `$curlPath --help`;
+if ($? == -1) {
+	writeLog("Missing program $curlPath");
+	writeLog("install from apt-get install curl");
+	$fail = 'y';
+}
+if($fail eq 'y'){
+	exit();
+}
 
 ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 $fDateTime = sprintf("%s-%02s-%02s %02s:%02s:%02s",$year+1900,$mon+1,$mday,$hour,$min,$sec);  
