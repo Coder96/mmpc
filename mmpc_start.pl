@@ -269,7 +269,7 @@ FEED: foreach $feed (@feeds){
 		
 		
 		if($feedUrl =~ m/justin.tv/i){ 
-			$command = "$curlPath -L -s '$feedUrl' | $xmlstarletPath sel -t -m '/objects/object' -o '$cDescS' -v 'stream_name' -o ' ' -v 'title' -o ' on ' -v 'created_on' -o '$cFldS' -o '$cLinkS' -v 'video_file_url' -n -o '$cRecSS' -n";
+			$command = "$curlPath -L -s '$feedUrl' | $xmlstarletPath sel -t -m '/objects/object' -o '$cDescS' -v 'stream_name' -o ' ' -v 'title'  -o ' on ' -v 'created_on' -o '$cFldS' -o '$cTitle' -o ' Part ' -v 'broadcast_part' -o '$cFldS' -o '$cLinkS' -v 'video_file_url' -n -o '$cRecSS' -n";
 		} elsif($feedUrl =~ m/blip.tv/i){ 
 			$command = "$curlPath -L -s '$feedUrl' | $xmlstarletPath sel -t -m '/rss/channel/item' -o '$cDescS' -v 'title' -o '$cFldS' -o '$cLinkS' -m 'enclosure' -v '\@url' -n -o '$cRecSS' -n";
 		} else {
