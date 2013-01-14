@@ -2,10 +2,11 @@ This has only been tested on mythbuntu 12.04. There is no security use at youown
 
 This program expects to be in the /opt/mmpc
 
-needed
+external programs needed
   rsstail in path
   youtube-dl expected in the /opt/mmpc
   xmlstarlet in path
+  curl in the path
 
  Tested 
   youtume.com 2012-10-15
@@ -14,8 +15,8 @@ needed
   Regular rss 2012-10-19
   justin.tv   2012-10-26	This api works http://api.justin.tv/api/channel/archives/<userid>.xml?limit=10
 		
-
+Userid and password not implimented yet.
   
 For the web interface copy the mmpc.php file to /var/www/
 
-
+The Config button will only show up after the mmpc_start.pl has be run and created the config file.
