@@ -5,6 +5,9 @@ use DBI;
 use MythTV;
 use File::Basename;
 use Fcntl ':flock';
+
+use constant { true => 1 , false => 0 };
+
 #
 # lets lock our self so only one instance of the program will run.
 #
@@ -32,9 +35,13 @@ my $cOldFiles      = 'mmpc_oldfiles.log';
 my $cOldFilestoAdd = 'mmpc_oldfilestoadd.log';
 my $cLastRun       = 'mmpc_lastrun.log';
 my $cDownloadFile  = 'mmpc_download.log';
+my $cOneTimeDL     = 'mmpc_onetimedl.txt';
 
 my $MaxNumberofFeedItemsToDownload = 10;
 my $MaxNumberofCharsToUseofDescption = 80;
+
+my $debug = true;
+
 
 #
 # Create Config file if it does not exesists.
@@ -54,6 +61,7 @@ unless(-e "$workdir/$configFile"){
 	\$RecordingsDir = '/var/lib/mythtv/recordings';
 	\$MaxNumberofFeedItemsToDownload = 10;
 	\$MaxNumberofCharsToUseofDescption = 80;
+	\$debug = true;
 DONE
 	
 	close(CONFIG);
@@ -75,9 +83,6 @@ my $justintvurl = '';  # yes this is bad.
 my $hostname = "hostname";
 my $hostname = qx($hostname);
 chomp($hostname);
-
-#$debug = 1; #true
-$debug = 0; #False
 
 # Connect to mythbackend
 my $Myth = new MythTV({'connect' => 0});
@@ -137,6 +142,15 @@ unless(-e "$workdir/$cLastRun"){
 }
 open LOG, ">$workdir/$cLastRun" or die $!;
 
+unless(-e "$workdir/$cOneTimeDL"){
+	system("touch $workdir/$cOneTimeDL");
+	system("chmod a+w $workdir/$cOneTimeDL");
+}
+open OneTimeMediaDL, "$workdir/$cOneTimeDL" or die $!;
+my @OneTimeDL = <OneTimeMediaDL>;
+close(OneTimeMediaDL);
+open OneTimeMediaDL, ">$workdir/$cOneTimeDL" or die $!;
+close(OneTimeMediaDL);
 #
 # Check if needed programs are installed.
 #
@@ -178,6 +192,18 @@ if($fail eq 'y'){
 $fDateTime = sprintf("%s-%02s-%02s %02s:%02s:%02s",$year+1900,$mon+1,$mday,$hour,$min,$sec);  
 writeLog("Start:$fDateTime");
 
+ONETIME: foreach $oneTimeDL (@OneTimeDL){
+	chomp($oneTimeDL);
+	@otdLine = split(/\t/,$oneTimeDL);
+	$DownloadType = DownladType($oneTimeDL);
+	writeLog("OneTime type:$DownloadType Link:$oneTimeDL");
+	if($DownloadType =~ 'youtube-dl'){
+		YouTubedownload(@otdLine[0], 'otd', @otdLine[1], @otdLine[2], $ChannelId);
+	}
+	elsif($DownloadType =~ 'wget'){
+		wgetdownload(@otdLine[0], 'otd', @otdLine[1], @otdLine[2]);
+	}
+}
 
 FEED: foreach $feed (@feeds){
 	#print ("$feed\n");
@@ -185,12 +211,14 @@ FEED: foreach $feed (@feeds){
 	
 	($feedName, $feedUrl, $feedUser, $feedPass, $feedmisc) = split("\t", $feed);
 	
-	$DownloadType = 'wget';
-	if($feedUrl =~ /youtube.com/i) { $DownloadType = 'youtube-dl'; }
-	if($feedUrl =~ /vimeo.com/i){ $DownloadType = 'youtube-dl'; }
-	if($feedUrl =~ /blip.tv/i){ $DownloadType = 'wget'; }
-	if($feedUrl =~ /escapistmagazine.com/i){ $DownloadType = 'youtube-dl'; }
-	if($feedUrl =~ /justin.tv/i){ $DownloadType = 'wget'; }
+	$DownloadType = DownladType($feedUrl);
+	
+#	$DownloadType = 'wget';
+#	if($feedUrl =~ /youtube.com/i) { $DownloadType = 'youtube-dl'; }
+#	if($feedUrl =~ /vimeo.com/i){ $DownloadType = 'youtube-dl'; }
+#	if($feedUrl =~ /blip.tv/i){ $DownloadType = 'wget'; }
+#	if($feedUrl =~ /escapistmagazine.com/i){ $DownloadType = 'youtube-dl'; }
+#	if($feedUrl =~ /justin.tv/i){ $DownloadType = 'wget'; }
 #  if($feedUrl =~ //i){ $DownloadType = ''; }
 #  if($feedUrl =~ //i){ $DownloadType = ''; }
 #  if($feedUrl =~ //i){ $DownloadType = ''; }
@@ -223,37 +251,41 @@ FEED: foreach $feed (@feeds){
 				foreach my $item (@previouslyDownloaded){
 					next ITEM if $fLink eq $item;
 				}
-				my($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, '.%(ext)s');
-				my $command = ("$youtubedlPath --no-part -vo '$RecordingsDir/$fLocalFileName' '$fLink' >$workdir/$cDownloadFile");
-				writeDebugLog("$command");
-				my $cLog = qx($command);
-				writeDebugLog("Youtube:$cLog");
-				$cLog = trim($cLog);
-				if($cLog eq ''){
-					open YT_OUT, "$workdir/$cDownloadFile" or die $!;
-					my @yt_out = <YT_OUT>;
-					close(YT_OUT);
-					my @string = grep(/Destination:/i, @yt_out);
-					my ($xkey, $xvalue) = split(/: /,@string[0]);
-					chomp($xvalue);
-					writeDebugLog("Basename: $xvalue");
-					my $File = basename($xvalue);
-					writeRecorded(
-						$File,
-						$ChannelId,
-						$feedName,
-						$fTitle,
-						$fDescription,
-						$fDateTime,
-						$fDate
-						);
-					writeOldFilesLog($fLink);
-					sleep(1);
-					#	exit();
-					($fTitle, $fLink, $fDescription, $fLocalFileName) ='';
-				} else {
-					writeLog("Faild to retrive file. $fLink from $feedName.");      
-				}
+#####################
+				YouTubedownload($fLink, $feedName, $fTitle, $fDescription);
+#####################
+#				my($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, '.%(ext)s');
+#				my $command = ("$youtubedlPath --no-part -vo '$RecordingsDir/$fLocalFileName' '$fLink' >$workdir/$cDownloadFile");
+#				writeDebugLog("$command");
+#				my $cLog = qx($command);
+#				writeDebugLog("Youtube:$cLog");
+#				$cLog = trim($cLog);
+#				if($cLog eq ''){
+#					open YT_OUT, "$workdir/$cDownloadFile" or die $!;
+#					my @yt_out = <YT_OUT>;
+#					close(YT_OUT);
+#					my @string = grep(/Destination:/i, @yt_out);
+#					my ($xkey, $xvalue) = split(/: /,@string[0]);
+#					chomp($xvalue);
+#					writeDebugLog("Basename: $xvalue");
+#					my $File = basename($xvalue);
+#					writeRecorded(
+#						$File,
+#						$ChannelId,
+#						$feedName,
+#						$fTitle,
+#						$fDescription,
+#						$fDateTime,
+#						$fDate
+#						);
+#					writeOldFilesLog($fLink);
+#					sleep(1);
+#					#	exit();
+#					($fTitle, $fLink, $fDescription, $fLocalFileName) ='';
+#				} else {
+#					writeLog("Faild to retrive file. $fLink from $feedName.");      
+#				}
+#################
 			}
 		}
 	}
@@ -304,43 +336,47 @@ FEED: foreach $feed (@feeds){
 					next ITEMA if $fLink eq $item;
 				}
 			}
-			my ($suffix) = $fLink =~ /(\.[^.]+)$/;
-			my($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, $suffix);
+##########
+			wgetdownload($fLink, $feedName, $fTitle, $fDescription);
+##########
+#			my ($suffix) = $fLink =~ /(\.[^.]+)$/;
+#			my($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, $suffix);
 			
-			$fpos1 = index($fLocalFileName, '?');
-			if($fpos1 > -1){
-				$fLocalFileName = substr($fLocalFileName, 0, $fpos1);
-			}
+#			$fpos1 = index($fLocalFileName, '?');
+#			if($fpos1 > -1){
+#				$fLocalFileName = substr($fLocalFileName, 0, $fpos1);
+#			}
 			
-			my $command = ("$wgetPath -v --output-document='$RecordingsDir/$fLocalFileName' --output-file=$workdir/$cDownloadFile '$fLink'");
-			writeDebugLog("$command");
-			my $cLog = qx($command);
-			$cLog = trim($cLog);
-			open DLWF, "$workdir/$cDownloadFile" or die $!;
-			$error = <DLWF>;
-			close(DLWF); 
-			if($error =~ m/ERROR 404: Not Found/i){
-				writeLog("404 $feedName $fLink");
-				next ITEMA;
-			}
-			writeRecorded(
-				$fLocalFileName,
-				$ChannelId,
-				$feedName,
-				$fTitle,
-				$fDescription,
-				$fDateTime,
-				$fDate
-				);
-			if($fLink =~ m/justin.tv/i){
-				$fpos1 = index($fLink, '.justin.tv/');
-				$justintvurl = substr($fLink, $fpos1);
-				writeOldFilesLog($justintvurl);
-			} else {
-				writeOldFilesLog($fLink);
-			}
-			sleep(1);
-			#	exit();
+#			my $command = ("$wgetPath -v --output-document='$RecordingsDir/$fLocalFileName' --output-file=$workdir/$cDownloadFile '$fLink'");
+#			writeDebugLog("$command");
+#			my $cLog = qx($command);
+#			$cLog = trim($cLog);
+#			open DLWF, "$workdir/$cDownloadFile" or die $!;
+#			$error = <DLWF>;
+#			close(DLWF); 
+#			if($error =~ m/ERROR 404: Not Found/i){
+#				writeLog("404 $feedName $fLink");
+#				next ITEMA;
+#			}
+#			writeRecorded(
+#				$fLocalFileName,
+#				$ChannelId,
+#				$feedName,
+#				$fTitle,
+#				$fDescription,
+#				$fDateTime,
+#				$fDate
+#				);
+#			if($fLink =~ m/justin.tv/i){
+#				$fpos1 = index($fLink, '.justin.tv/');
+#				$justintvurl = substr($fLink, $fpos1);
+#				writeOldFilesLog($justintvurl);
+#			} else {
+#				writeOldFilesLog($fLink);
+#			}
+#			sleep(1);
+#			#	exit();
+###################
 			($fTitle, $fLink, $fDescription, $fLocalFileName) ='';
 			if ($FeedItemsCtr > $MaxNumberofFeedItemsToDownload){
 				goto LeaveFeedItems;
@@ -355,7 +391,7 @@ writeLog("Stop:$fDateTime");
 close(LOG);
 close(OLDFILES);
 
-sub setupDates($){
+sub setupDates{
 	my ($iChannelId, $ifileExt) = @_;
 	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 	my $wDate = sprintf("%s-%02s-%02s",$year+1900,$mon+1,$mday);
@@ -365,7 +401,7 @@ sub setupDates($){
 	return($wLocalFileName,$wDateTime,$wDate);
 }
 
-sub writeRecorded($){
+sub writeRecorded{
 	my($wFile, $wChanid, $wTitle, $wSubtitle, $wDescription, $wStarttime, $wOriginalAirDate) = @_;
 	chomp($wFile);
 	my $wFile = trim($wFile);
@@ -438,6 +474,101 @@ sub writeDebugLog($){
 	if($debug){
 		print(LOG "$string\n");      
 	}
+}
+
+sub DownladType{
+	my ($feedUrl) = @_;
+	my $DownloadType = 'wget';
+	if($feedUrl =~ /youtube.com/i) { $DownloadType = 'youtube-dl'; }
+	if($feedUrl =~ /vimeo.com/i){ $DownloadType = 'youtube-dl'; }
+	if($feedUrl =~ /blip.tv/i){ $DownloadType = 'wget'; }
+	if($feedUrl =~ /escapistmagazine.com/i){ $DownloadType = 'youtube-dl'; }
+	if($feedUrl =~ /justin.tv/i){ $DownloadType = 'wget'; }
+#  if($feedUrl =~ //i){ $DownloadType = ''; }
+#  if($feedUrl =~ //i){ $DownloadType = ''; }
+#  if($feedUrl =~ //i){ $DownloadType = ''; }
+#  if($feedUrl =~ //i){ $DownloadType = ''; }
+#  if($feedUrl =~ //i){ $DownloadType = ''; }
+	return($DownloadType);
+}
+sub YouTubedownload{
+	my ($fLink, $feedName, $fTitle, $fDescription) = @_;
+	my ($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, '.%(ext)s');
+	my $command = ("$youtubedlPath --no-part -vo '$RecordingsDir/$fLocalFileName' '$fLink' >$workdir/$cDownloadFile");
+	writeDebugLog("$command");
+	my $cLog = qx($command);
+	writeDebugLog("Youtube:$cLog");
+	$cLog = trim($cLog);
+	if($cLog eq ''){
+		open YT_OUT, "$workdir/$cDownloadFile" or die $!;
+		my @yt_out = <YT_OUT>;
+		close(YT_OUT);
+		my @string = grep(/Destination:/i, @yt_out);
+		my ($xkey, $xvalue) = split(/: /,@string[0]);
+		chomp($xvalue);
+		writeDebugLog("Basename: $xvalue");
+		my $File = basename($xvalue);
+		writeRecorded(
+			$File,
+			$ChannelId,
+			$feedName,
+			$fTitle,
+			$fDescription,
+			$fDateTime,
+			$fDate
+			);
+		writeOldFilesLog($fLink);
+		sleep(1);
+		#	exit();
+		($fTitle, $fLink, $fDescription, $fLocalFileName) ='';
+		return true;
+	} else {
+		writeLog("Faild to retrive file. $fLink from $feedName.");
+		return false;
+	}
+}
+
+sub wgetdownload{
+	my ($fLink, $feedName, $fTitle, $fDescription) = @_;
+	
+	my ($suffix) = $fLink =~ /(\.[^.]+)$/;
+	my($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, $suffix);
+		
+	$fpos1 = index($fLocalFileName, '?');
+	if($fpos1 > -1){
+		$fLocalFileName = substr($fLocalFileName, 0, $fpos1);
+	}
+			
+	my $command = ("$wgetPath -v --output-document='$RecordingsDir/$fLocalFileName' --output-file=$workdir/$cDownloadFile '$fLink'");
+	writeDebugLog("$command");
+	my $cLog = qx($command);
+	$cLog = trim($cLog);
+	open DLWF, "$workdir/$cDownloadFile" or die $!;
+	$error = <DLWF>;
+	close(DLWF); 
+	if($error =~ m/ERROR 404: Not Found/i or
+	   $error =~ m/unable to resolve host address/i){
+		writeLog("404 otd $fLink");
+		return false;
+	}
+	writeRecorded(
+		$fLocalFileName,
+		$ChannelId,
+		$feedName,
+		$fTitle,
+		$fDescription,
+		$fDateTime,
+		$fDate
+		);
+	if($fLink =~ m/justin.tv/i){
+		$fpos1 = index($fLink, '.justin.tv/');
+		$justintvurl = substr($fLink, $fpos1);
+		writeOldFilesLog($justintvurl);
+	} else {
+		writeOldFilesLog($fLink);
+	}
+	sleep(1);
+	return true;
 }
 
 # Perl trim function to remove whitespace from the start and end of the string
