@@ -8,6 +8,7 @@ $cOldFileslog = '/opt/mmpc/mmpc_oldfiles.log';
 $cOldFileslogtoadd = '/opt/mmpc/mmpc_oldfilestoadd.log';
 $cFeedsFile   = '/opt/mmpc/mmpc_feeds.txt';
 $cConfigFile = '/opt/mmpc/mmpc_config.txt';
+$cOneTimeFile = '/opt/mmpc/mmpc_onetimedl.txt';
 
 #echo $_POST["editconfig"];
 #echo '<hr>';
@@ -34,6 +35,12 @@ if($_POST["edit"] == 'Save'){
 	$FH = fopen($cFeedsFile,'w');
 	fwrite($FH, $newFeeds);
 	fclose($FH);
+} elseif($_POST["oneshot"] == 'Add'){
+	$writeline = $_POST["editfeedurl"]."\t".$_POST["edittitle"]."\t".$_POST["editdescription"]."\n";
+	$FH = fopen($cOneTimeFile, 'a');
+	fwrite($FH, $writeline);
+	fclose($FH);
+	OneShot();
 } elseif($_POST["feed"] == 'Edit'){
 	EditFeed('Edit');
 } elseif($_POST["feed"] == 'Disable'){
@@ -67,6 +74,8 @@ if($_POST["toolbar"] == 'Last Run Log'){
 	ListFeeds();
 } elseif($_POST["toolbar"] == 'Config'){
 	ListConfig();
+}	elseif($_POST["toolbar"] == 'Oneshot'){
+	OneShot();
 } else {
 	ListFeeds();
 }
@@ -81,6 +90,7 @@ function ToolBar(){
 	echo '<form method=post >';
 	echo "<td><input type=submit name=toolbar value='List Feeds'   /></td>";
 	echo "<td><input type=submit name=toolbar value='Add Feed' /></td>";
+	echo "<td><input type=submit name=toolbar value='Oneshot' /></td>";
 	echo "<td><input type=submit name=toolbar value='Last Run Log' /></td>";
 	echo "<td><input type=submit name=toolbar value='Downloaded Log' /></td>";
 	echo "<td><input type=submit name=toolbar value='Old Files'    /></td>";
@@ -230,9 +240,17 @@ function SaveConfig(){
 	$i = 0;
 	$config='';
 	foreach ($_POST['configname'] as $name){
-#		echo "<br>$name <br>";
-#		echo $_POST['configval'][$i++];
-		$config = $config . $name . "='". $_POST['configval'][$i++]."';\n";
+#		echo "<br> $name ".  $_POST['configval'][$i];
+		if(is_numeric($_POST['configval'][$i])){
+			$config = $config . $name . "=". $_POST['configval'][$i].";\n";
+		} else {
+			if($_POST['configval'][$i] == 'true' or $_POST['configval'][$i] == 'false' ){
+				$config = $config . $name . "=". $_POST['configval'][$i].";\n";
+			} else {
+				$config = $config . $name . "='". $_POST['configval'][$i]."';\n";
+			}
+		}
+		$i++;
 	}
 #	echo '<code><pre>';
 #	echo $config;
@@ -240,6 +258,30 @@ function SaveConfig(){
 	$FH = fopen($cConfigFile,'w');
 	fwrite($FH, $config);
 	fclose($FH);
+}
+
+function OneShot(){
+	global $cOneTimeFile;
+	$list = file($cOneTimeFile);
+	
+	echo "<table>";
+	echo "<tbody><form method=post>";
+	echo "<tr><th>Title      </th><td><input size='100%' type=text name=edittitle /></td></tr>";
+	echo "<tr><th>Description</th><td><input size='100%' type=text id=editfeedurl name=editdescription /></td></tr>";
+	echo "<tr><th>URL        </th><td><input size='100%' type=text id=editfeedurl name=editfeedurl /></td></tr>";
+	echo "<tr><td></td><td><input type=submit name=oneshot value=Add /></td></tr>";
+	echo '</form></tbody></table>';
+	echo '<hr>';
+	
+	echo '<table><thead>';
+	echo ("<tr><th>Title</th><th>Description</th><th>URL</th></tr>");
+	echo '</thead><tbody>';
+	foreach ($list as $lineNum => $line){
+		$line = rtrim($line);
+		$item = explode("\t", $line);
+		echo "<tr><td nowrap>$item[1]</td><td nowrap>$item[2]</td><td nowrap>$item[0]</td></tr>";
+	}
+	echo '</tbody></table>';
 }
 
 ?>
