@@ -26,6 +26,7 @@ my $rsstailPath = 'rsstail';
 my $xmlstarletPath = 'xmlstarlet';
 my $curlPath = 'curl';
 my $ChannelId = '9999';
+my $UrlIdentString = '[DownLoadURL]';
 
 my $workdir = '/opt/mmpc';
 my $RecordingsDir = '/var/lib/mythtv/recordings';
@@ -36,6 +37,7 @@ my $cOldFilestoAdd = 'mmpc_oldfilestoadd.log';
 my $cLastRun       = 'mmpc_lastrun.log';
 my $cDownloadFile  = 'mmpc_download.log';
 my $cOneTimeDL     = 'mmpc_onetimedl.txt';
+my $cLastJobRun    = 'mmpc_lastjobrun.log';
 
 my $MaxNumberofFeedItemsToDownload = 10;
 my $MaxNumberofCharsToUseofDescption = 80;
@@ -62,6 +64,14 @@ unless(-e "$workdir/$configFile"){
 	\$MaxNumberofFeedItemsToDownload = 10;
 	\$MaxNumberofCharsToUseofDescption = 80;
 	\$debug = true;
+	\$cFeedsFile     = 'mmpc_feeds.txt';
+	\$cOldFiles      = 'mmpc_oldfiles.log';
+	\$cOldFilestoAdd = 'mmpc_oldfilestoadd.log';
+	\$cLastRun       = 'mmpc_lastrun.log';
+	\$cDownloadFile  = 'mmpc_download.log';
+	\$cOneTimeDL     = 'mmpc_onetimedl.txt';
+	\$cLastJobRun    = 'mmpc_lastjobrun.log';
+	\$UrlIdentString = '[DownLoadURL]';
 DONE
 	
 	close(CONFIG);
@@ -92,6 +102,13 @@ my $dbh = $Myth->{'dbh'};
 #
 # Create needed files
 #
+
+unless(-e "$workdir/$cLastJobRun"){
+	system("touch $workdir/$cLastJobRun");
+	system("chmod a+w $workdir/$cLastJobRun");
+}
+open LOG, ">>$workdir/$cLastJobRun" or die $!;
+
 unless(-e "$workdir/$cFeedsFile"){
 	system("touch $workdir/$cFeedsFile");
 	system("chmod a+w $workdir/$cFeedsFile");
@@ -194,14 +211,15 @@ writeLog("Start:$fDateTime");
 
 ONETIME: foreach $oneTimeDL (@OneTimeDL){
 	chomp($oneTimeDL);
-	@otdLine = split(/\t/,$oneTimeDL);
+	($otdURL, $otdTitle, $otdSubtitle, $otdDescp) = split(/\t/,$oneTimeDL);
 	$DownloadType = DownladType($oneTimeDL);
 	writeLog("OneTime type:$DownloadType Link:$oneTimeDL");
+	
 	if($DownloadType =~ 'youtube-dl'){
-		YouTubedownload(@otdLine[0], 'otd', @otdLine[1], @otdLine[2], $ChannelId);
+		YouTubedownload($otdURL, $otdTitle, $otdSubtitle, $otdDescp);
 	}
 	elsif($DownloadType =~ 'wget'){
-		wgetdownload(@otdLine[0], 'otd', @otdLine[1], @otdLine[2]);
+		wgetdownload($otdURL, $otdTitle, $otdSubtitle, $otdDescp);
 	}
 }
 
@@ -491,6 +509,7 @@ sub DownladType{
 #  if($feedUrl =~ //i){ $DownloadType = ''; }
 	return($DownloadType);
 }
+
 sub YouTubedownload{
 	my ($fLink, $feedName, $fTitle, $fDescription) = @_;
 	my ($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, '.%(ext)s');
@@ -513,7 +532,7 @@ sub YouTubedownload{
 			$ChannelId,
 			$feedName,
 			$fTitle,
-			$fDescription,
+			$fDescription . ' ' . $UrlIdentString . $fLink,
 			$fDateTime,
 			$fDate
 			);
@@ -556,7 +575,7 @@ sub wgetdownload{
 		$ChannelId,
 		$feedName,
 		$fTitle,
-		$fDescription,
+		$fDescription . ' ' . $UrlIdentString . $fLink,
 		$fDateTime,
 		$fDate
 		);

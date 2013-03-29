@@ -36,7 +36,7 @@ if($_POST["edit"] == 'Save'){
 	fwrite($FH, $newFeeds);
 	fclose($FH);
 } elseif($_POST["oneshot"] == 'Add'){
-	$writeline = $_POST["editfeedurl"]."\t".$_POST["edittitle"]."\t".$_POST["editdescription"]."\n";
+	$writeline = $_POST["editfeedurl"]."\t".$_POST["edittitle"]."\t".$_POST["editsubtitle"]."\t".$_POST["editdescription"]."\n";
 	$FH = fopen($cOneTimeFile, 'a');
 	fwrite($FH, $writeline);
 	fclose($FH);
@@ -267,6 +267,7 @@ function OneShot(){
 	echo "<table>";
 	echo "<tbody><form method=post>";
 	echo "<tr><th>Title      </th><td><input size='100%' type=text name=edittitle /></td></tr>";
+	echo "<tr><th>Subtitle   </th><td><input size='100%' type=text name=editsubtitle /></td></tr>";
 	echo "<tr><th>Description</th><td><input size='100%' type=text id=editfeedurl name=editdescription /></td></tr>";
 	echo "<tr><th>URL        </th><td><input size='100%' type=text id=editfeedurl name=editfeedurl /></td></tr>";
 	echo "<tr><td></td><td><input type=submit name=oneshot value=Add /></td></tr>";
@@ -274,12 +275,12 @@ function OneShot(){
 	echo '<hr>';
 	
 	echo '<table><thead>';
-	echo ("<tr><th>Title</th><th>Description</th><th>URL</th></tr>");
+	echo ("<tr><th>Title</th><th>Subtitle</th><th>Description</th><th>URL</th></tr>");
 	echo '</thead><tbody>';
 	foreach ($list as $lineNum => $line){
 		$line = rtrim($line);
 		$item = explode("\t", $line);
-		echo "<tr><td nowrap>$item[1]</td><td nowrap>$item[2]</td><td nowrap>$item[0]</td></tr>";
+		echo "<tr><td nowrap>$item[1]</td><td nowrap>$item[2]</td><td nowrap>$item[3]</td><td nowrap>$item[0]</td></tr>";
 	}
 	echo '</tbody></table>';
 }

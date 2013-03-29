@@ -1,6 +1,6 @@
-This has only been tested on mythbuntu 12.04. There is no security use at youown risk.
+This has only been tested on mythbuntu 12.04. There is no security use at you own risk.
 
-This program expects to be in the /opt/mmpc
+This program expects to be in the /opt/mmpc Dir and all files need to be world writeable.
 
 external programs needed
   rsstail in path
@@ -14,9 +14,15 @@ external programs needed
   blip.tv     2012-10-17
   Regular rss 2012-10-19
   justin.tv   2012-10-26	This api works http://api.justin.tv/api/channel/archives/<userid>.xml?limit=10
-		
+
 Userid and password not implimented yet.
   
 For the web interface copy the mmpc.php file to /var/www/
 
 The Config button will only show up after the mmpc_start.pl has be run and created the config file.
+
+
+To be able to redownload media. A user job needs to be setup.
+In myth Beackend setup under general settings. Add a user job to one of the selections
+Redownload file
+/opt/mmpc/mmpc_job.pl '%TITLE%' '%SUBTITLE%' '%DESCRIPTION%' 
