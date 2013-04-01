@@ -63,7 +63,7 @@ unless(-e "$workdir/$configFile"){
 	\$RecordingsDir = '/var/lib/mythtv/recordings';
 	\$MaxNumberofFeedItemsToDownload = 10;
 	\$MaxNumberofCharsToUseofDescption = 80;
-	\$debug = true;
+	\$debug = false;
 	\$cFeedsFile     = 'mmpc_feeds.txt';
 	\$cOldFiles      = 'mmpc_oldfiles.log';
 	\$cOldFilestoAdd = 'mmpc_oldfilestoadd.log';
