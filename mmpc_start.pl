@@ -240,9 +240,6 @@ FEED: foreach $feed (@feeds){
 		}
 	}
 	elsif($DownloadType =~ 'wget'){
-	#
-	# curl -L -s 'http://revision3.com/tbhs/feed/MP4-hd30' | xmlstarlet sel -t -m "/rss/channel/item" -o 'description-------' -v "description" -o 'link-----------' -m "enclosure" -v "@url" -n -o '---------recordseperator--------' -n
-	#
 		my $cRecSS = '---------recordseperator--------';
 		my $cFldS  = 'FldS-----------';
 		my $cTitle = 'titl-----------';
