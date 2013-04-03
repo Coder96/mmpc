@@ -42,7 +42,7 @@ my $cLastJobRun    = 'mmpc_lastjobrun.log';
 my $MaxNumberofFeedItemsToDownload = 10;
 my $MaxNumberofCharsToUseofDescption = 80;
 
-my $debug = true;
+my $debug = false;
 
 
 #
@@ -231,17 +231,6 @@ FEED: foreach $feed (@feeds){
 	
 	$DownloadType = DownladType($feedUrl);
 	
-#	$DownloadType = 'wget';
-#	if($feedUrl =~ /youtube.com/i) { $DownloadType = 'youtube-dl'; }
-#	if($feedUrl =~ /vimeo.com/i){ $DownloadType = 'youtube-dl'; }
-#	if($feedUrl =~ /blip.tv/i){ $DownloadType = 'wget'; }
-#	if($feedUrl =~ /escapistmagazine.com/i){ $DownloadType = 'youtube-dl'; }
-#	if($feedUrl =~ /justin.tv/i){ $DownloadType = 'wget'; }
-#  if($feedUrl =~ //i){ $DownloadType = ''; }
-#  if($feedUrl =~ //i){ $DownloadType = ''; }
-#  if($feedUrl =~ //i){ $DownloadType = ''; }
-#  if($feedUrl =~ //i){ $DownloadType = ''; }
-#  if($feedUrl =~ //i){ $DownloadType = ''; }
 	writeLog("$feedName type:$DownloadType");
 
 	if($DownloadType =~ 'youtube-dl'){
@@ -260,50 +249,16 @@ FEED: foreach $feed (@feeds){
 				my ($fTitle, $fLink, $fDescription, $fLocalFileName) ='';
 				foreach $line (@feedlines){
 					($mkey, $mvalue) = split(/: /,$line);
-					if($mkey =~ m/title/i){$fTitle = $mvalue;}
-					if($mkey =~ m/link/i){$fLink = $mvalue;}
-					if($mkey =~ m/description/i){$fDescription = $mvalue;}
+					if($line =~ m/Title:/){$fTitle = $mvalue;}
+					if($line =~ m/Link:/){$fLink = $mvalue;}
+					if($line =~ m/Description:/){$fDescription = $mvalue;}
 				}
 				# Skip item if we've already got it
 				chomp($fLink);
 				foreach my $item (@previouslyDownloaded){
 					next ITEM if $fLink eq $item;
 				}
-#####################
 				YouTubedownload($fLink, $feedName, $fTitle, $fDescription);
-#####################
-#				my($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, '.%(ext)s');
-#				my $command = ("$youtubedlPath --no-part -vo '$RecordingsDir/$fLocalFileName' '$fLink' >$workdir/$cDownloadFile");
-#				writeDebugLog("$command");
-#				my $cLog = qx($command);
-#				writeDebugLog("Youtube:$cLog");
-#				$cLog = trim($cLog);
-#				if($cLog eq ''){
-#					open YT_OUT, "$workdir/$cDownloadFile" or die $!;
-#					my @yt_out = <YT_OUT>;
-#					close(YT_OUT);
-#					my @string = grep(/Destination:/i, @yt_out);
-#					my ($xkey, $xvalue) = split(/: /,@string[0]);
-#					chomp($xvalue);
-#					writeDebugLog("Basename: $xvalue");
-#					my $File = basename($xvalue);
-#					writeRecorded(
-#						$File,
-#						$ChannelId,
-#						$feedName,
-#						$fTitle,
-#						$fDescription,
-#						$fDateTime,
-#						$fDate
-#						);
-#					writeOldFilesLog($fLink);
-#					sleep(1);
-#					#	exit();
-#					($fTitle, $fLink, $fDescription, $fLocalFileName) ='';
-#				} else {
-#					writeLog("Faild to retrive file. $fLink from $feedName.");      
-#				}
-#################
 			}
 		}
 	}
@@ -354,47 +309,7 @@ FEED: foreach $feed (@feeds){
 					next ITEMA if $fLink eq $item;
 				}
 			}
-##########
 			wgetdownload($fLink, $feedName, $fTitle, $fDescription);
-##########
-#			my ($suffix) = $fLink =~ /(\.[^.]+)$/;
-#			my($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, $suffix);
-			
-#			$fpos1 = index($fLocalFileName, '?');
-#			if($fpos1 > -1){
-#				$fLocalFileName = substr($fLocalFileName, 0, $fpos1);
-#			}
-			
-#			my $command = ("$wgetPath -v --output-document='$RecordingsDir/$fLocalFileName' --output-file=$workdir/$cDownloadFile '$fLink'");
-#			writeDebugLog("$command");
-#			my $cLog = qx($command);
-#			$cLog = trim($cLog);
-#			open DLWF, "$workdir/$cDownloadFile" or die $!;
-#			$error = <DLWF>;
-#			close(DLWF); 
-#			if($error =~ m/ERROR 404: Not Found/i){
-#				writeLog("404 $feedName $fLink");
-#				next ITEMA;
-#			}
-#			writeRecorded(
-#				$fLocalFileName,
-#				$ChannelId,
-#				$feedName,
-#				$fTitle,
-#				$fDescription,
-#				$fDateTime,
-#				$fDate
-#				);
-#			if($fLink =~ m/justin.tv/i){
-#				$fpos1 = index($fLink, '.justin.tv/');
-#				$justintvurl = substr($fLink, $fpos1);
-#				writeOldFilesLog($justintvurl);
-#			} else {
-#				writeOldFilesLog($fLink);
-#			}
-#			sleep(1);
-#			#	exit();
-###################
 			($fTitle, $fLink, $fDescription, $fLocalFileName) ='';
 			if ($FeedItemsCtr > $MaxNumberofFeedItemsToDownload){
 				goto LeaveFeedItems;
