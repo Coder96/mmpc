@@ -38,19 +38,29 @@ my $cLastRun       = 'mmpc_lastrun.log';
 my $cDownloadFile  = 'mmpc_download.log';
 my $cOneTimeDL     = 'mmpc_onetimedl.txt';
 my $cLastJobRun    = 'mmpc_lastjobrun.log';
+my $cWebConfig     = 'mmpc_webconfig.php';
 
 my $MaxNumberofFeedItemsToDownload = 10;
 my $MaxNumberofCharsToUseofDescption = 80;
 
 my $debug = false;
 
+my $justintvurl = '';  # yes this is bad. Global Var.
+
+my $hostname = "hostname";
+my $hostname = qx($hostname);
+chomp($hostname);
+
+# Connect to mythbackend
+my $Myth = new MythTV({'connect' => 0});
+# Connect to the database
+my $dbh = $Myth->{'dbh'};
 
 #
 # Create Config file if it does not exesists.
 #
 unless(-e "$workdir/$configFile"){
-	system("touch $workdir/$configFile");
-	system("chmod a+w $workdir/$configFile");
+	CheckCreateFile($configFile);
 	
 	open(CONFIG, ">>$workdir/$configFile")or die $!;
 	print CONFIG <<DONE ;
@@ -72,6 +82,7 @@ unless(-e "$workdir/$configFile"){
 	\$cOneTimeDL     = 'mmpc_onetimedl.txt';
 	\$cLastJobRun    = 'mmpc_lastjobrun.log';
 	\$UrlIdentString = '[DownLoadURL]';
+	\$cWebConfig     = 'mmpc_webconfig.php';
 DONE
 	
 	close(CONFIG);
@@ -87,32 +98,21 @@ foreach $line (@lines){
 }
 close(CONFIG);
 
-
-my $justintvurl = '';  # yes this is bad.
-
-my $hostname = "hostname";
-my $hostname = qx($hostname);
-chomp($hostname);
-
-# Connect to mythbackend
-my $Myth = new MythTV({'connect' => 0});
-# Connect to the database
-my $dbh = $Myth->{'dbh'};
-
 #
 # Create needed files
 #
+CheckCreateFile($cDownloadFile);
+CheckCreateFile($cWebConfig);
+CheckCreateFile($cLastJobRun);
+CheckCreateFile($cFeedsFile);
+CheckCreateFile($cOldFiles);
+CheckCreateFile($cOldFilestoAdd);
+CheckCreateFile($cOldFiles);
+CheckCreateFile($cOneTimeDL);
+CheckCreateFile($cLastRun);
 
-unless(-e "$workdir/$cLastJobRun"){
-	system("touch $workdir/$cLastJobRun");
-	system("chmod a+w $workdir/$cLastJobRun");
-}
-open LOG, ">>$workdir/$cLastJobRun" or die $!;
+open LOG, ">$workdir/$cLastRun" or die $!;
 
-unless(-e "$workdir/$cFeedsFile"){
-	system("touch $workdir/$cFeedsFile");
-	system("chmod a+w $workdir/$cFeedsFile");
-}
 open FEEDS, "$workdir/$cFeedsFile" or die $!;
 while (<FEEDS>)	{
 	 s/#.*//;            # ignore comments by erasing them
@@ -122,10 +122,6 @@ while (<FEEDS>)	{
 }
 close(FEEDS);
 
-unless(-e "$workdir/$cOldFiles"){
-	system("touch $workdir/$cOldFiles");
-	system("chmod a+w $workdir/$cOldFiles");
-}
 open OLDFILES, "$workdir/$cOldFiles" or die $!;
 while (<OLDFILES>){
 	 s/#.*//;            # ignore comments by erasing them
@@ -134,40 +130,23 @@ while (<OLDFILES>){
 	push @previouslyDownloaded, $_;
 }
 close(OLDFILES);
-unless(-e "$workdir/$cOldFilestoAdd"){
-	system("touch $workdir/$cOldFilestoAdd");
-	system("chmod a+w $workdir/$cOldFilestoAdd");
-}
+
 open OLDFILESADDTO, "$workdir/$cOldFilestoAdd" or die $!;
 my @addtooldfile = <OLDFILESADDTO>;
 close(OLDFILESADDTO);
-open OLDFILESADDTO, ">$workdir/$cOldFilestoAdd" or die $!;
-close(OLDFILESADDTO);
+EraseFile($cOldFilestoAdd);
 
-unless(-e "$workdir/$cOldFiles"){
-	system("touch $workdir/$cOldFiles");
-	system("chmod a+w $workdir/$cOldFiles");
-}
 open OLDFILES, ">>$workdir/$cOldFiles" or die $!;
 foreach $filetoadd (@addtooldfile){
 	chomp($filetoadd);
 	writeOldFilesLog($filetoadd);
 }
-unless(-e "$workdir/$cLastRun"){
-	system("touch $workdir/$cLastRun");
-	system("chmod a+w $workdir/$cLastRun");
-}
-open LOG, ">$workdir/$cLastRun" or die $!;
 
-unless(-e "$workdir/$cOneTimeDL"){
-	system("touch $workdir/$cOneTimeDL");
-	system("chmod a+w $workdir/$cOneTimeDL");
-}
 open OneTimeMediaDL, "$workdir/$cOneTimeDL" or die $!;
 my @OneTimeDL = <OneTimeMediaDL>;
 close(OneTimeMediaDL);
-open OneTimeMediaDL, ">$workdir/$cOneTimeDL" or die $!;
-close(OneTimeMediaDL);
+EraseFile($cOneTimeDL);
+
 #
 # Check if needed programs are installed.
 #
@@ -205,9 +184,7 @@ if($fail eq 'y'){
 	exit();
 }
 
-($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
-$fDateTime = sprintf("%s-%02s-%02s %02s:%02s:%02s",$year+1900,$mon+1,$mday,$hour,$min,$sec);  
-writeLog("Start:$fDateTime");
+writeLog("Start:".rDateTime() );
 
 ONETIME: foreach $oneTimeDL (@OneTimeDL){
 	chomp($oneTimeDL);
@@ -224,7 +201,7 @@ ONETIME: foreach $oneTimeDL (@OneTimeDL){
 }
 
 FEED: foreach $feed (@feeds){
-	#print ("$feed\n");
+	
 	my ($feedName, $feedUrl, $feedUser, $feedPass, $feedmisc, $DownloadType) = ' ';
 	
 	($feedName, $feedUrl, $feedUser, $feedPass, $feedmisc) = split("\t", $feed);
@@ -318,21 +295,10 @@ FEED: foreach $feed (@feeds){
 		LeaveFeedItems:
 	}
 }
-($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
-$fDateTime = sprintf("%s-%02s-%02s %02s:%02s:%02s",$year+1900,$mon+1,$mday,$hour,$min,$sec);  
-writeLog("Stop:$fDateTime");
+
+writeLog("Stop:".rDateTime() );
 close(LOG);
 close(OLDFILES);
-
-sub setupDates{
-	my ($iChannelId, $ifileExt) = @_;
-	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
-	my $wDate = sprintf("%s-%02s-%02s",$year+1900,$mon+1,$mday);
-	my $wLocalFileName = sprintf("%s_%s%02s%02s%02s%02s%02s00$ifileExt",$ChannelId,$year+1900,$mon+1,$mday,$hour,$min,$sec);
-	my $wDateTime = sprintf("%s %02s:%02s:%02s",$wDate,$hour,$min,$sec);
-	
-	return($wLocalFileName,$wDateTime,$wDate);
-}
 
 sub writeRecorded{
 	my($wFile, $wChanid, $wTitle, $wSubtitle, $wDescription, $wStarttime, $wOriginalAirDate) = @_;
@@ -503,6 +469,37 @@ sub wgetdownload{
 	}
 	sleep(1);
 	return true;
+}
+
+sub CheckCreateFile {
+	my ($file) = @_;
+	unless(-e "$workdir/$file"){
+		system("touch $workdir/$file");
+		system("chmod a+w $workdir/$file");
+	}
+}
+
+sub setupDates{
+	my ($iChannelId, $ifileExt) = @_;
+	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+	my $wDate = sprintf("%s-%02s-%02s",$year+1900,$mon+1,$mday);
+	my $wLocalFileName = sprintf("%s_%s%02s%02s%02s%02s%02s00$ifileExt",$ChannelId,$year+1900,$mon+1,$mday,$hour,$min,$sec);
+	my $wDateTime = sprintf("%s %02s:%02s:%02s",$wDate,$hour,$min,$sec);
+	
+	return($wLocalFileName,$wDateTime,$wDate);
+}
+
+sub rDateTime{
+	my $fDateTime;
+	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+	$fDateTime = sprintf("%s-%02s-%02s %02s:%02s:%02s",$year+1900,$mon+1,$mday,$hour,$min,$sec);  
+	return $fDateTime;
+}
+
+sub EraseFile{
+	my ($file) = @_;
+	open FILE, ">$workdir/$file" or die $!;
+	close(FILE);
 }
 
 # Perl trim function to remove whitespace from the start and end of the string
