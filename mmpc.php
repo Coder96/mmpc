@@ -9,6 +9,17 @@ $cOldFileslogtoadd = '/opt/mmpc/mmpc_oldfilestoadd.log';
 $cFeedsFile   = '/opt/mmpc/mmpc_feeds.txt';
 $cConfigFile = '/opt/mmpc/mmpc_config.txt';
 $cOneTimeFile = '/opt/mmpc/mmpc_onetimedl.txt';
+$cWebConfig = '/opt/mmpc/mmpc_webconfig.php';
+$cLastJobRun    = '/opt/mmpc/mmpc_lastjobrun.log';
+
+$DisplayUrlChars = 30;
+
+if(file_exists($cWebConfig)){
+	$config = file($cWebConfig);
+	foreach ($config as $lineNum => $line){
+		eval($line);
+	}
+}
 
 #echo $_POST["editconfig"];
 #echo '<hr>';
@@ -58,14 +69,17 @@ if($_POST["edit"] == 'Save'){
 	}
 } elseif($_POST["editconfig"] == 'Save'){
 	SaveConfig();
+} elseif($_POST["editconfig"] == 'SaveUI'){
+	SaveConfig('UI');
 }
-
 
 if($_POST["toolbar"] == 'Last Run Log'){
 	ListFile($cLastRunlog);
 } elseif($_POST["toolbar"] == 'Downloaded Log'){
 	ListFile($cDownloadlog);
-} elseif($_POST["toolbar"] == 'Old Files'){
+} elseif($_POST["toolbar"] == 'User Job Log'){
+	ListFile($cLastJobRun);
+} elseif($_POST["toolbar"] == 'Old Files Log'){
 	ListFile($cOldFileslog);
 } elseif($_POST["toolbar"] == 'Old Files to add'){
 	ListFile($cOldFileslogtoadd);
@@ -74,6 +88,8 @@ if($_POST["toolbar"] == 'Last Run Log'){
 	ListFeeds();
 } elseif($_POST["toolbar"] == 'Config'){
 	ListConfig();
+} elseif($_POST["toolbar"] == 'UI Config'){
+	ListConfig('UI');
 }	elseif($_POST["toolbar"] == 'Oneshot'){
 	OneShot();
 } else {
@@ -88,15 +104,20 @@ function ToolBar(){
 	echo '<table><tbody>';
 	echo '<tr>';
 	echo '<form method=post >';
-	echo "<td><input type=submit name=toolbar value='List Feeds'   /></td>";
-	echo "<td><input type=submit name=toolbar value='Add Feed' /></td>";
-	echo "<td><input type=submit name=toolbar value='Oneshot' /></td>";
-	echo "<td><input type=submit name=toolbar value='Last Run Log' /></td>";
-	echo "<td><input type=submit name=toolbar value='Downloaded Log' /></td>";
-	echo "<td><input type=submit name=toolbar value='Old Files'    /></td>";
+	echo "<td><input type=submit name=toolbar value='List Feeds'       /></td>";
+	echo "<td><input type=submit name=toolbar value='Add Feed'         /></td>";
+	echo "<td><input type=submit name=toolbar value='Oneshot'          /></td>";
+	echo "<td><input type=submit name=toolbar value='Last Run Log'     /></td>";
+	echo "<td><input type=submit name=toolbar value='Downloaded Log'   /></td>";
+	echo "<td><input type=submit name=toolbar value='Old Files Log'    /></td>";
 	echo "<td><input type=submit name=toolbar value='Old Files to add' /></td>";
+	echo "<td><input type=submit name=toolbar value='User Job Log'     /></td>";
+	
 	if(file_exists($cConfigFile)){
 		echo "<td><input type=submit name=toolbar value='Config' /></td>";
+	}
+	if(file_exists($cConfigFile)){
+		echo "<td><input type=submit name=toolbar value='UI Config' /></td>";
 	}
 	echo '</form>';
 	echo '</tr>';
@@ -104,11 +125,15 @@ function ToolBar(){
 	echo '<hr>';
 }
 
-function ListConfig(){
+function ListConfig($configType=''){
 	
-	global $cConfigFile;
+	global $cConfigFile, $cWebConfig;
 	
-	$cLine = file($cConfigFile);
+	if($configType == 'UI'){
+		$cLine = file($cWebConfig);
+	} else {
+		$cLine = file($cConfigFile);
+	}
 	
 	echo '<table><thead>';
 	echo '<tr><th>Description</th><th>Value</th></tr>';
@@ -119,13 +144,13 @@ function ListConfig(){
 		$line[1] = str_replace(";","", $line[1]);
 		echo "<tr><td>$line[0]</td><td><input type=hidden name=configname[] value='$line[0]' /><input size='50%' type=text name=configval[] value=$line[1] /></td></tr>\n";
 	}
-	echo "<tr><td></td><td><input type=submit name=editconfig value='Save' /></td></tr>";
+	echo "<tr><td></td><td><input type=submit name=editconfig value='Save".$configType."' /></td></tr>";
 	echo '</form></tbody></table>';
 }
 
 function ListFeeds(){
 	
-	global $cFeedsFile;
+	global $cFeedsFile, $DisplayUrlChars;
 	
 	$EnabledList ='';
 	$DisabledList = '';
@@ -137,18 +162,27 @@ function ListFeeds(){
 		if(substr($line,0,1) == '#'){
 			$DisabledList = $DisabledList."<tr><td><form method=post ><input type=hidden name=line value='$line' /><input type=submit name=feed value='Enable' /></form></td>";
 			$DisabledList = $DisabledList."<td><form method=post ><input type=hidden name=line value='$line' /><input type=submit name=feed value='Edit' /></form></td>";
-			$DisabledList = $DisabledList."<td nowrap>$feed[0]</td><td>".substr($feed[1],0,30)."...</td><td>$feed[2]</td><td>$feed[3]</td>";
-			$DisabledList = $DisabledList."<td><form method=post ><input type=hidden name=line value='$line' /><input type=submit name=feed value='Add to old' /></form></td>";
+			$DisabledList = $DisabledList."<td nowrap>$feed[0]</td><td nowrap>";
+			$DisabledList = $DisabledList. substr($feed[1],0,$DisplayUrlChars);
+			if(strlen($feed[1]) > $DisplayUrlChars){
+				$DisabledList = $DisabledList.'...';
+			} 
+			$DisabledList = $DisabledList."</td><td>$feed[2]</td><td>$feed[3]</td>";
+			$DisabledList = $DisabledList."<td><form method=post ><input type=hidden name=line value='$line' /><input type=submit name=feed value='Add to old' /></form></td></tr>";
 		} else {
 			$EnabledList = $EnabledList."<tr><td><form method=post ><input type=hidden name=line value='$line' /><input type=submit name=feed value='Disable' /></form></td>";
 			$EnabledList = $EnabledList."<td><form method=post ><input type=hidden name=line value='$line' /><input type=submit name=feed value='Edit' /></form>";
-			$EnabledList = $EnabledList."<td nowrap>$feed[0]</td><td>".substr($feed[1],0,30)."...</td><td>$feed[2]</td><td>$feed[3]</td>";
+			$EnabledList = $EnabledList."<td nowrap>$feed[0]</td><td nowrap>";
+			$EnabledList = $EnabledList. substr($feed[1],0,$DisplayUrlChars);
+			if(strlen($feed[1]) > $DisplayUrlChars){
+				$EnabledList = $EnabledList.'...';
+			} 
+			$EnabledList = $EnabledList."</td><td>$feed[2]</td><td>$feed[3]</td>";
 			$EnabledList = $EnabledList."<td><form method=post ><input type=hidden name=line value='$line' /><input type=submit name=feed value='Add to old' /></form></td></tr>";
 		}
-		
 	}	
 	echo '<table><thead>';
-	echo ("<tr><th></th><th></th><th>Name</th><th>URL</th><th>User name</th><th>Pass word</th><th>Add to old files log</th></tr>");
+	echo ("<tr><th></th><th></th><th>Title</th><th>URL</th><th>User name</th><th>Pass word</th><th>Add to old files log</th></tr>");
 	echo '</thead><tbody>';
 	echo ($EnabledList);
 	echo '<tr><td colspan=100%><hr></td></tr>';
@@ -235,8 +269,18 @@ function FeedOnOff($iFlip='E'){
 	fclose($FH);
 }
 
-function SaveConfig(){
-	global $cConfigFile;
+function SaveConfig($configType=''){
+
+	global $cConfigFile, $cWebConfig;
+	
+	if($configType == 'UI'){
+		$workConfig = $cWebConfig;
+	} else {
+		$workConfig = $cConfigFile;
+	}
+	
+	$cLine = file($workConfig);
+	
 	$i = 0;
 	$config='';
 	foreach ($_POST['configname'] as $name){
@@ -255,13 +299,13 @@ function SaveConfig(){
 #	echo '<code><pre>';
 #	echo $config;
 	
-	$FH = fopen($cConfigFile,'w');
+	$FH = fopen($workConfig,'w');
 	fwrite($FH, $config);
 	fclose($FH);
 }
 
 function OneShot(){
-	global $cOneTimeFile;
+	global $cOneTimeFile, $DisplayUrlChars;
 	$list = file($cOneTimeFile);
 	
 	echo "<table>";
@@ -280,7 +324,12 @@ function OneShot(){
 	foreach ($list as $lineNum => $line){
 		$line = rtrim($line);
 		$item = explode("\t", $line);
-		echo "<tr><td nowrap>$item[1]</td><td nowrap>$item[2]</td><td nowrap>$item[3]</td><td nowrap>$item[0]</td></tr>";
+		echo "<tr><td nowrap>$item[1]</td><td nowrap>$item[2]</td><td nowrap>$item[3]</td><td nowrap>";
+		echo substr($item[0],0,$DisplayUrlChars);
+			if(strlen($item[0]) > $DisplayUrlChars){
+				echo '...';
+			} 
+		echo "</td></tr>";
 	}
 	echo '</tbody></table>';
 }

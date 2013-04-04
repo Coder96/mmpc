@@ -59,6 +59,15 @@ my $dbh = $Myth->{'dbh'};
 #
 # Create Config file if it does not exesists.
 #
+unless(-e "$workdir/$cWebConfig"){
+	CheckCreateFile($cWebConfig);
+	
+	open(CONFIG, ">>$workdir/$cWebConfig")or die $!;
+	print CONFIG <<DONE
+	\$DisplayUrlChars = 40;
+DONE
+}
+
 unless(-e "$workdir/$configFile"){
 	CheckCreateFile($configFile);
 	
@@ -102,7 +111,6 @@ close(CONFIG);
 # Create needed files
 #
 CheckCreateFile($cDownloadFile);
-CheckCreateFile($cWebConfig);
 CheckCreateFile($cLastJobRun);
 CheckCreateFile($cFeedsFile);
 CheckCreateFile($cOldFiles);
@@ -213,6 +221,7 @@ FEED: foreach $feed (@feeds){
 	if($DownloadType =~ 'youtube-dl'){
 		$uniqueString = '---HopeThisIsUnique---';
 		my $command = "$rsstailPath -u '$feedUrl' -ldcH1Z$uniqueString -n$MaxNumberofFeedItemsToDownload -b$MaxNumberofCharsToUseofDescption 2>&1";
+		writeDebugLog("$command");
 		my $rsstail = qx($command);
 		if($rsstail =~ m/^Error/i){
 			writeLog("Faild to retrive or bad xml. $feedName $feedUrl");
@@ -225,7 +234,7 @@ FEED: foreach $feed (@feeds){
 				@feedlines = split("\n",$feedlines);
 				my ($fTitle, $fLink, $fDescription, $fLocalFileName) ='';
 				foreach $line (@feedlines){
-					($mkey, $mvalue) = split(/: /,$line);
+					($mkey, $mvalue) = split(/: /,$line, 2 );
 					if($line =~ m/Title:/){$fTitle = $mvalue;}
 					if($line =~ m/Link:/){$fLink = $mvalue;}
 					if($line =~ m/Description:/){$fDescription = $mvalue;}
@@ -405,6 +414,10 @@ sub YouTubedownload{
 		chomp($xvalue);
 		writeDebugLog("Basename: $xvalue");
 		my $File = basename($xvalue);
+		if(length($fTitle) < 11){
+			$fTitle = $fTitle . ' ' . substr($fDescription,0,30);
+			$fDescription = substr($fDescription,30)
+		}
 		writeRecorded(
 			$File,
 			$ChannelId,
