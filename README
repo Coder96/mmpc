@@ -25,7 +25,7 @@ The Config button will only show up after the mmpc_start.pl has be run and creat
 To be able to redownload media. A user job needs to be setup.
 In myth Beackend setup under general settings. Add a user job to one of the selections
 Redownload file
-/opt/mmpc/mmpc_job.pl '%TITLE%' '%SUBTITLE%' '%DESCRIPTION%' 
+/opt/mmpc/mmpc_job.pl '%FILE%'
 One on the the previus screens you have to check the alow job to run check box.
 
 This will work if your front end and back end are on the same box.
@@ -39,11 +39,11 @@ Depending on how old your install is. You may have a lot of junk records in ther
 
 For this exaple we are going to use user job 1.
 
-value 					 	data 																														hostname
------------------------------------------------------------------------------------------
-AutoRunUserJob1 	0 																															NULL
-JobAllowUserJob1	1 																															NULL
-UserJob1					/opt/mmpc/mmpc_job.pl '%TITLE%' '%SUBTITLE%' '%DESCRIPTION%'		NULL
-UserJobDesc1			Redownload File 																								NULL
+value 					 	data 															hostname
+-----------------------------------------------------------
+AutoRunUserJob1 	0 																NULL
+JobAllowUserJob1	1 																NULL
+UserJob1					/opt/mmpc/mmpc_job.pl '%FILE%'		NULL
+UserJobDesc1			Redownload File 									NULL
 
 Have only these records alowed all my fron ends to use the userjob.
