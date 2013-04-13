@@ -2,15 +2,16 @@
 
 # Includes
 use File::Basename;
-use Fcntl ':flock';
+#use Fcntl ':flock';
+use MythTV;
 
 use constant { true => 1 , false => 0 };
 
 #
 # lets lock our self so only one instance of the program will run.
 #
-open SELF, '</opt/mmpc/mmpc_job.pl' or exit; 
-flock SELF, LOCK_EX | LOCK_NB or exit;
+#open SELF, '</opt/mmpc/mmpc_job.pl' or exit; 
+#flock SELF, LOCK_EX | LOCK_NB or exit;
 #
 # Global vars
 #
@@ -34,29 +35,38 @@ foreach $line (@lines){
 }
 close(CONFIG);
 
-unless(-e "$workdir/$cLastJobRun"){
-	system("touch $workdir/$cLastJobRun");
-	system("chmod a+w $workdir/$cLastJobRun");
-}
+
 open LOG, ">>$workdir/$cLastJobRun" or die $!;
 
 ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 $fDateTime = sprintf("%s-%02s-%02s %02s:%02s:%02s",$year+1900,$mon+1,$mday,$hour,$min,$sec);  
 writeLog("mmpc_job Start:$fDateTime");
 
+
+# Connect to mythbackend
+my $Myth = new MythTV({'connect' => 0});
+# Connect to the database
+my $dbh = $Myth->{'dbh'};
+
 open OneTimeMediaDL, ">>$workdir/$cOneTimeDL" or die $!;
 
-open LOG, ">$workdir/$cLastRun" or die $!;
+my $iFile		= $ARGV[0];
 
-my $iTitle		= $ARGV[0];
-my $iSubTitle	= $ARGV[1];
-my $iDescrip	= $ARGV[2];
 
-$pos = rindex $iDescrip, $UrlIdentString;
+writeLog($iFile);
 
-print substr($iDescrip, $pos+length($UrlIdentString))."\n";
+$sql = "SELECT title, subtitle, description FROM recorded WHERE basename LIKE '$iFile' ";
+$sth=$dbh->prepare($sql);
+$sth->execute();
+($Tiltle, $SubTitle, $Desc) = $sth->fetchrow_array();
 
-$outLine = substr($iDescrip, $pos+length($UrlIdentString),length($iDescrip))."\t$iTitle\t$iSubTitle\t".substr($iDescrip,0,80)."\n";
+
+
+$pos = rindex $Desc, $UrlIdentString;
+
+#print substr($Desc, $pos+length($UrlIdentString))."\n";
+
+$outLine = substr($Desc, $pos+length($UrlIdentString),length($Desc))."\t$Tiltle\t$SubTitle\t".substr($Desc,0,$pos)."\n";
 
 print OneTimeMediaDL $outLine;
 
