@@ -14,6 +14,7 @@ external programs needed
   blip.tv     2012-10-17
   Regular rss 2012-10-19
   justin.tv   2012-10-26	This api works http://api.justin.tv/api/channel/archives/<userid>.xml?limit=10
+  dailymotion 2013-12-30 http://www.dailymotion.com/rss/user/<Userid>
 
 Userid and password not implimented yet.
   

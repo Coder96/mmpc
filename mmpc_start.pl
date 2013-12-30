@@ -389,7 +389,7 @@ sub DownladType{
 	if($feedUrl =~ /blip.tv/i){ $DownloadType = 'wget'; }
 	if($feedUrl =~ /escapistmagazine.com/i){ $DownloadType = 'youtube-dl'; }
 	if($feedUrl =~ /justin.tv/i){ $DownloadType = 'wget'; }
-#  if($feedUrl =~ //i){ $DownloadType = ''; }
+  if($feedUrl =~ /dailymotion/i){ $DownloadType = 'youtube-dl'; }
 #  if($feedUrl =~ //i){ $DownloadType = ''; }
 #  if($feedUrl =~ //i){ $DownloadType = ''; }
 #  if($feedUrl =~ //i){ $DownloadType = ''; }
