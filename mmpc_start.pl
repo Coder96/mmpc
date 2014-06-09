@@ -130,6 +130,12 @@ while (<FEEDS>)	{
 }
 close(FEEDS);
 
+# Reverse feeds list on odd hours
+if(rHour() % 2){
+	@feeds = reverse(@feeds);
+}
+
+
 open OLDFILES, "$workdir/$cOldFiles" or die $!;
 while (<OLDFILES>){
 	 s/#.*//;            # ignore comments by erasing them
@@ -504,6 +510,11 @@ sub rDateTime{
 	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 	$fDateTime = sprintf("%s-%02s-%02s %02s:%02s:%02s",$year+1900,$mon+1,$mday,$hour,$min,$sec);  
 	return $fDateTime;
+}
+
+sub rHour{
+	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+	return $hour;
 }
 
 sub EraseFile{

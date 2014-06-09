@@ -47,4 +47,4 @@ JobAllowUserJob1	1 																NULL
 UserJob1					/opt/mmpc/mmpc_job.pl '%FILE%'		NULL
 UserJobDesc1			Redownload File 									NULL
 
-Have only these records alowed all my fron ends to use the userjob.
+Having only these records alowed all my fron ends to submit the userjob.
