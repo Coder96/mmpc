@@ -377,13 +377,15 @@ sub writeOldFilesLog($){
 
 sub writeLog($){
 	my ($string) = @_;
-	print(LOG "$string\n");      
+	$mTime = rTime();
+	print(LOG "$mTime $string\n");      
 }
 
 sub writeDebugLog($){
 	my ($string) = @_;
 	if($debug){
-		print(LOG "$string\n");      
+	$mTime = rTime();
+		print(LOG "$mTime $string\n");      
 	}
 }
 
@@ -419,6 +421,10 @@ sub YouTubedownload{
 		my ($xkey, $xvalue) = split(/: /,@string[0]);
 		chomp($xvalue);
 		writeDebugLog("Basename: $xvalue");
+		if(length($xvalue) < 1){
+			writeDebugLog("No file to download.");
+			return false;
+		}
 		my $File = basename($xvalue);
 		if(length($fTitle) < 11){
 			$fTitle = $fTitle . ' ' . substr($fDescription,0,30);
@@ -509,6 +515,13 @@ sub rDateTime{
 	my $fDateTime;
 	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 	$fDateTime = sprintf("%s-%02s-%02s %02s:%02s:%02s",$year+1900,$mon+1,$mday,$hour,$min,$sec);  
+	return $fDateTime;
+}
+
+sub rTime{
+	my $fDateTime;
+	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+	$fDateTime = sprintf("%02s:%02s:%02s",$hour,$min,$sec);  
 	return $fDateTime;
 }
 
