@@ -83,12 +83,14 @@ if($_POST["toolbar"] == 'Last Run Log'){
 	ListFile($cOldFileslog);
 } elseif($_POST["toolbar"] == 'Old Files to add'){
 	ListFile($cOldFileslogtoadd);
+} elseif($_POST["toolbar"] == 'Read Me'){
+	ListFile('/opt/mmpc/README');
 } elseif($_POST["toolbar"] == 'Add Feed'){
 	EditFeed();
 	ListFeeds();
-} elseif($_POST["toolbar"] == 'Config'){
+} elseif($_POST["toolbar"] == 'System Config'){
 	ListConfig();
-} elseif($_POST["toolbar"] == 'UI Config'){
+} elseif($_POST["toolbar"] == 'Web UI Config'){
 	ListConfig('UI');
 }	elseif($_POST["toolbar"] == 'Oneshot'){
 	OneShot();
@@ -96,32 +98,28 @@ if($_POST["toolbar"] == 'Last Run Log'){
 	ListFeeds();
 }
 
-
 function ToolBar(){
 
-	global $cConfigFile;
+	global $cConfigFile, $cWebConfig;
 
-	echo '<table><tbody>';
-	echo '<tr>';
 	echo '<form method=post >';
-	echo "<td><input type=submit name=toolbar value='List Feeds'       /></td>";
-	echo "<td><input type=submit name=toolbar value='Add Feed'         /></td>";
-	echo "<td><input type=submit name=toolbar value='Oneshot'          /></td>";
-	echo "<td><input type=submit name=toolbar value='Last Run Log'     /></td>";
-	echo "<td><input type=submit name=toolbar value='Downloaded Log'   /></td>";
-	echo "<td><input type=submit name=toolbar value='Old Files Log'    /></td>";
-	echo "<td><input type=submit name=toolbar value='Old Files to add' /></td>";
-	echo "<td><input type=submit name=toolbar value='User Job Log'     /></td>";
+	echo "<input type=submit name=toolbar value='List Feeds'       />";
+	echo "<input type=submit name=toolbar value='Add Feed'         />";
+	echo "<input type=submit name=toolbar value='Oneshot'          />";
+	echo "<input type=submit name=toolbar value='Last Run Log'     />";
+	echo "<input type=submit name=toolbar value='Downloaded Log'   />";
+	echo "<input type=submit name=toolbar value='Old Files Log'    />";
+	echo "<input type=submit name=toolbar value='Old Files to add' />";
+	echo "<input type=submit name=toolbar value='User Job Log'     />";
 	
 	if(file_exists($cConfigFile)){
-		echo "<td><input type=submit name=toolbar value='Config' /></td>";
+		echo "<input type=submit name=toolbar value='System Config' />";
 	}
-	if(file_exists($cConfigFile)){
-		echo "<td><input type=submit name=toolbar value='UI Config' /></td>";
+	if(file_exists($cWebConfig)){
+		echo "<input type=submit name=toolbar value='Web UI Config' />";
 	}
+	echo "<input type=submit name=toolbar value='Read Me' />";
 	echo '</form>';
-	echo '</tr>';
-	echo '</tbody></table>';
 	echo '<hr>';
 }
 
@@ -217,6 +215,8 @@ function FillUrl(){
 		document.getElementById('editfeedurl').value='http://gdata.youtube.com/feeds/api/users/'+ document.getElementById('editfeedtext').value +'/uploads';
 	} else if(sel.options[sel.selectedIndex].value =='Justin.tv user archive'){
 		document.getElementById('editfeedurl').value='http://api.justin.tv/api/channel/archives/'+ document.getElementById('editfeedtext').value +'.xml?limit=10';
+		} else if(sel.options[sel.selectedIndex].value =='Youtube Channel ID'){
+		document.getElementById('editfeedurl').value='https://www.youtube.com/feeds/videos.xml?channel_id='+ document.getElementById('editfeedtext').value;
 	}
 }
 </script>
@@ -232,6 +232,7 @@ function FillUrl(){
 	echo "<tr><th>or        </th><td> </td></tr>";
 	echo "<tr><th>Feed Type </th><td>
 					<SELECT id=urltype name=urltype>
+						<OPTION>Youtube Channel ID</OPTION>
 						<OPTION>Youtube User Uploads</OPTION>
 						<OPTION>Justin.tv user archive</OPTION>
 					</SELECT>
