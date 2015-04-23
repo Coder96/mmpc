@@ -15,7 +15,8 @@ external programs needed
   Regular rss 2012-10-19
   justin.tv   2012-10-26	This api works http://api.justin.tv/api/channel/archives/<userid>.xml?limit=10
   dailymotion 2013-12-30 http://www.dailymotion.com/rss/user/<Userid>
-  youtume.com 2015-04-21
+  youtume.com 2015-04-21 channel_id
+  youtume.com 2015-04-22 user
 
 Userid and password not implimented yet.
   

@@ -217,6 +217,8 @@ function FillUrl(){
 		document.getElementById('editfeedurl').value='http://api.justin.tv/api/channel/archives/'+ document.getElementById('editfeedtext').value +'.xml?limit=10';
 		} else if(sel.options[sel.selectedIndex].value =='Youtube Channel ID'){
 		document.getElementById('editfeedurl').value='https://www.youtube.com/feeds/videos.xml?channel_id='+ document.getElementById('editfeedtext').value;
+		} else if(sel.options[sel.selectedIndex].value =='Youtube User ID'){
+		document.getElementById('editfeedurl').value='https://www.youtube.com/feeds/videos.xml?user='+ document.getElementById('editfeedtext').value;
 	}
 }
 </script>
@@ -232,6 +234,7 @@ function FillUrl(){
 	echo "<tr><th>or        </th><td> </td></tr>";
 	echo "<tr><th>Feed Type </th><td>
 					<SELECT id=urltype name=urltype>
+						<OPTION>Youtube User ID</OPTION>
 						<OPTION>Youtube Channel ID</OPTION>
 						<OPTION>Youtube User Uploads</OPTION>
 						<OPTION>Justin.tv user archive</OPTION>
