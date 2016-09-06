@@ -351,9 +351,12 @@ INSERT INTO mythconverg.recorded (
    progend,
    starttime,
    subtitle,
-   title
+   title,
+   season,
+   episode,
+   inetref
   )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);');
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);');
 	    $sth->execute(
 	      $wFile,
 	      $wChanid,
@@ -366,7 +369,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);');
 	      $wStarttime,
 	      $wStarttime,
 	      $wSubtitle,
-	      $wTitle
+	      $wTitle,
+	      '1',
+	      '1',
+	      'unkown'
 	      ) or 
 	      die "DBI::errstr";
 	    
