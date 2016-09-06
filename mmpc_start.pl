@@ -228,6 +228,7 @@ FEED: foreach $feed (@feeds){
 		$uniqueString = '---HopeThisIsUnique---';
 		my $command = "$rsstailPath -u '$feedUrl' -ldcH1Z$uniqueString -n$MaxNumberofFeedItemsToDownload -b$MaxNumberofCharsToUseofDescption 2>&1";
 		writeDebugLog("$command");
+		print("$command\n");
 		my $rsstail = qx($command);
 		if($rsstail =~ m/^Error/i){
 			writeLog("Faild to retrive or bad xml. $feedName $feedUrl");
@@ -272,6 +273,7 @@ FEED: foreach $feed (@feeds){
 			$command = "$curlPath -L -s '$feedUrl' | $xmlstarletPath sel -t -m '/rss/channel/item' -o '$cTitle' -v 'title' -o '$cFldS' -o '$cDescS' -v 'description' -o '$cFldS' -o '$cLinkS' -m 'enclosure' -v '\@url' -n -o '$cRecSS' -n";
 		}
 		writeDebugLog("$command");
+		print("$command\n");
 		$block = qx($command);
 		if($error =~ m/Start tag expected/i){
 			writeLog("404 $feedName $feedUrl");
@@ -418,6 +420,7 @@ sub YouTubedownload{
 	my ($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, '.%(ext)s');
 	my $command = ("$youtubedlPath --no-part -vo '$RecordingsDir/$fLocalFileName' '$fLink' >$workdir/$cDownloadFile");
 	writeDebugLog("$command");
+	print("$command\n");
 	my $cLog = qx($command);
 	writeDebugLog("Youtube:$cLog");
 	$cLog = trim($cLog);
@@ -471,6 +474,7 @@ sub wgetdownload{
 			
 	my $command = ("$wgetPath -v --output-document='$RecordingsDir/$fLocalFileName' --output-file=$workdir/$cDownloadFile '$fLink'");
 	writeDebugLog("$command");
+	print("$command\n");
 	my $cLog = qx($command);
 	$cLog = trim($cLog);
 	open DLWF, "$workdir/$cDownloadFile" or die $!;
