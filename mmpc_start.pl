@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl
 
 # Includes
 use DBI;
@@ -11,7 +11,7 @@ use constant { true => 1 , false => 0 };
 #
 # lets lock our self so only one instance of the program will run.
 #
-open SELF, '</opt/mmpc/mmpc_start.pl' or exit; 
+open SELF, '</opt/mmpc/mmpc_start.pl' or exit;
 flock SELF, LOCK_EX | LOCK_NB or exit;
 #
 # Global vars
@@ -61,7 +61,7 @@ my $dbh = $Myth->{'dbh'};
 #
 unless(-e "$workdir/$cWebConfig"){
 	CheckCreateFile($cWebConfig);
-	
+
 	open(CONFIG, ">>$workdir/$cWebConfig")or die $!;
 	print CONFIG <<DONE
 	\$DisplayUrlChars = 40;
@@ -70,7 +70,7 @@ DONE
 
 unless(-e "$workdir/$configFile"){
 	CheckCreateFile($configFile);
-	
+
 	open(CONFIG, ">>$workdir/$configFile")or die $!;
 	print CONFIG <<DONE ;
 	\$youtubedlPath = '/opt/mmpc/youtube-dl';
@@ -93,7 +93,7 @@ unless(-e "$workdir/$configFile"){
 	\$UrlIdentString = '[DownLoadURL]';
 	\$cWebConfig     = 'mmpc_webconfig.php';
 DONE
-	
+
 	close(CONFIG);
 }
 
@@ -205,7 +205,7 @@ ONETIME: foreach $oneTimeDL (@OneTimeDL){
 	($otdURL, $otdTitle, $otdSubtitle, $otdDescp) = split(/\t/,$oneTimeDL);
 	$DownloadType = DownladType($oneTimeDL);
 	writeLog("OneTime type:$DownloadType Link:$oneTimeDL");
-	
+
 	if($DownloadType =~ 'youtube-dl'){
 		YouTubedownload($otdURL, $otdTitle, $otdSubtitle, $otdDescp);
 	}
@@ -215,19 +215,20 @@ ONETIME: foreach $oneTimeDL (@OneTimeDL){
 }
 
 FEED: foreach $feed (@feeds){
-	
+
 	my ($feedName, $feedUrl, $feedUser, $feedPass, $feedmisc, $DownloadType) = ' ';
-	
+
 	($feedName, $feedUrl, $feedUser, $feedPass, $feedmisc) = split("\t", $feed);
-	
+
 	$DownloadType = DownladType($feedUrl);
-	
+
 	writeLog("$feedName type:$DownloadType");
 
 	if($DownloadType =~ 'youtube-dl'){
 		$uniqueString = '---HopeThisIsUnique---';
 		my $command = "$rsstailPath -u '$feedUrl' -ldcH1Z$uniqueString -n$MaxNumberofFeedItemsToDownload -b$MaxNumberofCharsToUseofDescption 2>&1";
 		writeDebugLog("$command");
+		print("$command\n");
 		my $rsstail = qx($command);
 		if($rsstail =~ m/^Error/i){
 			writeLog("Faild to retrive or bad xml. $feedName $feedUrl");
@@ -260,16 +261,17 @@ FEED: foreach $feed (@feeds){
 		my $cTitle = 'titl-----------';
 		my $cDescS = 'dscp-----------';
 		my $cLinkS = 'link-----------';
-		
-		
-		if($feedUrl =~ m/justin.tv/i){ 
+
+
+		if($feedUrl =~ m/justin.tv/i){
 			$command = "$curlPath -L -s '$feedUrl' | $xmlstarletPath sel -t -m '/objects/object' -o '$cDescS' -v 'stream_name' -o ' ' -v 'title'  -o ' on ' -v 'created_on' -o '$cFldS' -o '$cTitle' -o ' Part ' -v 'broadcast_part' -o '$cFldS' -o '$cLinkS' -v 'video_file_url' -n -o '$cRecSS' -n";
-		} elsif($feedUrl =~ m/blip.tv/i){ 
+		} elsif($feedUrl =~ m/blip.tv/i){
 			$command = "$curlPath -L -s '$feedUrl' | $xmlstarletPath sel -t -m '/rss/channel/item' -o '$cDescS' -v 'title' -o '$cFldS' -o '$cLinkS' -m 'enclosure' -v '\@url' -n -o '$cRecSS' -n";
 		} else {
 			$command = "$curlPath -L -s '$feedUrl' | $xmlstarletPath sel -t -m '/rss/channel/item' -o '$cTitle' -v 'title' -o '$cFldS' -o '$cDescS' -v 'description' -o '$cFldS' -o '$cLinkS' -m 'enclosure' -v '\@url' -n -o '$cRecSS' -n";
 		}
 		writeDebugLog("$command");
+		print("$command\n");
 		$block = qx($command);
 		if($error =~ m/Start tag expected/i){
 			writeLog("404 $feedName $feedUrl");
@@ -302,7 +304,7 @@ FEED: foreach $feed (@feeds){
 			($fTitle, $fLink, $fDescription, $fLocalFileName) ='';
 			if ($FeedItemsCtr > $MaxNumberofFeedItemsToDownload){
 				goto LeaveFeedItems;
-			}		
+			}
 		}
 		LeaveFeedItems:
 	}
@@ -324,18 +326,18 @@ sub writeRecorded{
 
 	chomp($wDescription);
 	chomp($wSubtitle);
-	
+
 	$wSubtitle =~ s/[\n\r\t]+//g;
 	if(length(trim($wSubtitle)) == 0){
 		$wSubtitle = substr($wDescription,0,30);
 		$wDescription = substr($wDescription,30);
 	}
-	
+
 	$fDescription =~ s/[\n\r\t]+//g;
 	if(length(trim($wDescription)) == 0){
 		$wDescription = 'No description';
 	}
-		
+
 	$sth=$dbh->prepare('
 INSERT INTO mythconverg.recorded (
    basename,
@@ -349,9 +351,12 @@ INSERT INTO mythconverg.recorded (
    progend,
    starttime,
    subtitle,
-   title
+   title,
+	 season,
+	 episode,
+	 inetref
   )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);');
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);');
 	    $sth->execute(
 	      $wFile,
 	      $wChanid,
@@ -364,10 +369,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);');
 	      $wStarttime,
 	      $wStarttime,
 	      $wSubtitle,
-	      $wTitle
-	      ) or 
+	      $wTitle,
+				'1',
+				'1',
+				'unkown'
+	      ) or
 	      die "DBI::errstr";
-	    
+
 }
 
 sub writeOldFilesLog($){
@@ -378,27 +386,27 @@ sub writeOldFilesLog($){
 sub writeLog($){
 	my ($string) = @_;
 	$mTime = rTime();
-	print(LOG "$mTime $string\n");      
+	print(LOG "$mTime $string\n");
 }
 
 sub writeDebugLog($){
 	my ($string) = @_;
 	if($debug){
 	$mTime = rTime();
-		print(LOG "$mTime $string\n");      
+		print(LOG "$mTime $string\n");
 	}
 }
 
 sub DownladType{
 	my ($feedUrl) = @_;
 	my $DownloadType = 'wget';
-	if($feedUrl =~ /youtube.com/i) { $DownloadType = 'youtube-dl'; }
-	if($feedUrl =~ /vimeo.com/i){ $DownloadType = 'youtube-dl'; }
-	if($feedUrl =~ /blip.tv/i){ $DownloadType = 'wget'; }
-	if($feedUrl =~ /escapistmagazine.com/i){ $DownloadType = 'youtube-dl'; }
-	if($feedUrl =~ /justin.tv/i){ $DownloadType = 'wget'; }
-  if($feedUrl =~ /dailymotion/i){ $DownloadType = 'youtube-dl'; }
-#  if($feedUrl =~ //i){ $DownloadType = ''; }
+	if($feedUrl =~ /youtube.com/i) 					{ $DownloadType = 'youtube-dl'; }
+	if($feedUrl =~ /vimeo.com/i)						{ $DownloadType = 'youtube-dl'; }
+	if($feedUrl =~ /blip.tv/i)							{ $DownloadType = 'wget'; }
+	if($feedUrl =~ /escapistmagazine.com/i)	{ $DownloadType = 'youtube-dl'; }
+	if($feedUrl =~ /justin.tv/i)						{ $DownloadType = 'wget'; }
+  if($feedUrl =~ /dailymotion/i)					{ $DownloadType = 'youtube-dl'; }
+  if($feedUrl =~ /pbs/i)									{ $DownloadType = 'youtube-dl'; }
 #  if($feedUrl =~ //i){ $DownloadType = ''; }
 #  if($feedUrl =~ //i){ $DownloadType = ''; }
 #  if($feedUrl =~ //i){ $DownloadType = ''; }
@@ -410,6 +418,7 @@ sub YouTubedownload{
 	my ($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, '.%(ext)s');
 	my $command = ("$youtubedlPath --no-part -vo '$RecordingsDir/$fLocalFileName' '$fLink' >$workdir/$cDownloadFile");
 	writeDebugLog("$command");
+	print("$command\n");
 	my $cLog = qx($command);
 	writeDebugLog("Youtube:$cLog");
 	$cLog = trim($cLog);
@@ -452,22 +461,23 @@ sub YouTubedownload{
 
 sub wgetdownload{
 	my ($fLink, $feedName, $fTitle, $fDescription) = @_;
-	
+
 	my ($suffix) = $fLink =~ /(\.[^.]+)$/;
 	my($fLocalFileName, $fDateTime, $fDate) = setupDates($ChannelId, $suffix);
-		
+
 	$fpos1 = index($fLocalFileName, '?');
 	if($fpos1 > -1){
 		$fLocalFileName = substr($fLocalFileName, 0, $fpos1);
 	}
-			
+
 	my $command = ("$wgetPath -v --output-document='$RecordingsDir/$fLocalFileName' --output-file=$workdir/$cDownloadFile '$fLink'");
 	writeDebugLog("$command");
+	print("$command\n");
 	my $cLog = qx($command);
 	$cLog = trim($cLog);
 	open DLWF, "$workdir/$cDownloadFile" or die $!;
 	$error = <DLWF>;
-	close(DLWF); 
+	close(DLWF);
 	if($error =~ m/ERROR 404: Not Found/i or
 	   $error =~ m/unable to resolve host address/i){
 		writeLog("404 otd $fLink");
@@ -507,21 +517,21 @@ sub setupDates{
 	my $wDate = sprintf("%s-%02s-%02s",$year+1900,$mon+1,$mday);
 	my $wLocalFileName = sprintf("%s_%s%02s%02s%02s%02s%02s00$ifileExt",$ChannelId,$year+1900,$mon+1,$mday,$hour,$min,$sec);
 	my $wDateTime = sprintf("%s %02s:%02s:%02s",$wDate,$hour,$min,$sec);
-	
+
 	return($wLocalFileName,$wDateTime,$wDate);
 }
 
 sub rDateTime{
 	my $fDateTime;
 	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
-	$fDateTime = sprintf("%s-%02s-%02s %02s:%02s:%02s",$year+1900,$mon+1,$mday,$hour,$min,$sec);  
+	$fDateTime = sprintf("%s-%02s-%02s %02s:%02s:%02s",$year+1900,$mon+1,$mday,$hour,$min,$sec);
 	return $fDateTime;
 }
 
 sub rTime{
 	my $fDateTime;
 	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
-	$fDateTime = sprintf("%02s:%02s:%02s",$hour,$min,$sec);  
+	$fDateTime = sprintf("%02s:%02s:%02s",$hour,$min,$sec);
 	return $fDateTime;
 }
 

@@ -3,3 +3,10 @@ mmpc_feeds.txt
 mmpc_lastrun.log
 mmpc_oldfiles.log
 mmpc_oldfilestoadd.log
+mmpc_config.txt
+mmpc_cron.log
+mmpc_lastjobrun.log
+mmpc_onetimedl.txt
+mmpc_webconfig.php
+nohup.out
+youtube-dl*
