@@ -310,6 +310,10 @@ FEED: foreach $feed (@feeds){
 	}
 }
 
+unless(-e "$workdir"){
+	system("chmod a+rw $workdir/*");
+}
+
 writeLog("Stop:".rDateTime() );
 close(LOG);
 close(OLDFILES);
