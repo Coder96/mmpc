@@ -310,8 +310,8 @@ FEED: foreach $feed (@feeds){
 	}
 }
 
-unless(-e "$workdir"){
-	system("chmod a+rw $workdir/*");
+if(-e "$RecordingsDir"){
+	system("chmod a+rw $RecordingsDir/*");
 }
 
 writeLog("Stop:".rDateTime() );
@@ -509,7 +509,7 @@ sub wgetdownload{
 
 sub CheckCreateFile {
 	my ($file) = @_;
-	unless(-e "$workdir/$file"){
+	if(-e "$workdir/$file"){
 		system("touch $workdir/$file");
 		system("chmod a+w $workdir/$file");
 	}
